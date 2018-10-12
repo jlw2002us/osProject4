@@ -12,26 +12,30 @@
 
 
 struct ProcessBlock{
-
-  int priority;
+   int queueNo;
+   int flag;
+   int ProcessID;
+   int ready;
 };
 
 struct Memory{
   long long int nanoseconds;
-  long long int seconds;
-  struct ProcessBlock processBlock[];
+  int seconds;
   
+  struct ProcessBlock processBlock[];
+   
 };
 struct Memory *shmPTR;
  sem_t* sem;
 
 
 
-int main(){
+int main(int argc, char* argv[]){
   
   key_t  ShmKEY;
   int ShmID;
-  printf("hello");
+   int n = atoi(argv[1]);
+   
   ShmKEY = ftok(".",'x');
   ShmID = shmget(ShmKEY, sizeof(struct Memory), 0666);
   if (ShmID < 0){
@@ -43,17 +47,39 @@ int main(){
     printf("*** shmat error(client) ***\n");
     exit(1);
    }
+   //get random number to see if waits, runs, or terminates
+    srand(getpid());
+    int value = 0;
+    value =  (rand()%100);
+    if (value <= 10)//terminate, don't run
+       shmPTR->processBlock[0].flag = 0;
+    if((value > 10) && ( value <= 50))
+       shmPTR->processBlock[0].flag = 1; //run for quantume and then finish
+    if((value > 50)&& ( value <= 70))
+       shmPTR->processBlock[0].flag = 2; //wait for an event
+    else
+       shmPTR->processBlock[0].flag = 3; //get preempted before finishing quantum
 
-    
-                  
-     sem = sem_open("pSem3",0);
+     long long int x =0;
+     while(x < 100000){
+       
+     sem = sem_open("pSem7",0);
      sem_wait(sem);
-     shmPTR->processBlock[0].priority = 1;                                     
+      
+         if(shmPTR->processBlock[0].ready == 1)
+          { printf("Process %ld is running ...\n", (long)getpid());
+           break;}                                    
         sem_post(sem);                                                                  
         sem_close(sem);
-        shmdt((void *) shmPTR);
+        
   
-                                                                                                           
-   exit(0);
+                 x++; }
+   
+    shmPTR->seconds = 2;
+    sem_post(sem);
+    sem_close(sem);
+
+    shmdt((void *) shmPTR);
+    exit(0);
    }
                                

@@ -19,21 +19,32 @@
 #include <wait.h>
 
 struct ProcessBlock{
-   int priority; //1 for high, 0 for low
-   
-      };
+  int queueNo; //1 - high, 0- low
+  int flag; //1 - waited, 2- used cpu, 3 -terminated
+  int processID;
+  int ready; //if process is ready to be run = 1
+    };
 
 struct Memory{
   long long int nanoseconds;
-  long long int seconds;
+  int seconds;
+  int terminatedProcesses;
   struct ProcessBlock processBlock[];
-  
 };
+
+struct ProcessTable{
+  int processID;
+  long long int arrival_nanoseconds;
+  int arrival_seconds;
+  long long int cpu_nanoseconds;
+  int cpu_seconds;
+  }; 
+
 struct Memory *shmPTR;
 bool signal_interrupt = false;
 int shmid;
 sem_t *sem;
-bool ChildExceeded = false;
+
 
 
 void  ALARMhandler(int sig)
@@ -68,54 +79,79 @@ void helpoptions()
 }
 
 int main (int argc, char **argv){
-    int i;                        /*      loop variables          */
+    int i = 0; char str[4];
+    snprintf(str, sizeof(str), "%d",i);                        /*      loop variables          */
     key_t shmkey;
-    
+     struct ProcessTable processTable[18];  
+    //int highPriority[]; int Highbottom;
+    //int highStackno; int lowStackno;
+    //int lowPriority[];  int Lowbottom;
     pid_t pid;                    /*      fork pid                */
-    
+    int childProcesses = 0;
+    //int terminatedProcesses = 0;
 
-     shmkey = ftok (".", 'x');       /* valid directory name and a number */
-    
+      shmkey = ftok (".", 'x');       /* valid directory name and a number */
+
     shmid = shmget (shmkey, sizeof (struct Memory), 0666 | IPC_CREAT);
     if (shmid < 0){                           /* shared memory error check */
                    perror ("shmget\n");
                             exit (1);
                                 }
-    //
-    shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
-    shmPTR->seconds = 0;
-    shmPTR->nanoseconds = 0;
-    shmPTR->processBlock[0].priority = 0;                                            
     
-    sem = sem_open ("pSem3", O_CREAT | O_EXCL, 0644, 1); 
+    shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */  
+    shmPTR->seconds = 0;
+    shmPTR->processBlock[0].ready = 0;
+    shmPTR->nanoseconds = 0;
+    shmPTR->processBlock[0].queueNo = 0;
+    sem = sem_open ("pSem7", O_CREAT | O_EXCL, 0644, 1); 
      printf ("semaphores initialized.\n\n");
     sem_close(sem);
-   
+    
+    //get random number for priority
+     srand(getpid());
+    int value = 0;
+    value =  (rand()%100);
+    
+      if (value <= 10){
+        shmPTR->processBlock[0].queueNo = 1;
+      }
+      else
+        shmPTR->processBlock[0].queueNo = 0;
+    
+    
+    if(childProcesses < 1){
         pid = fork ();
         
         if (pid < 0) {
-            sem_unlink ("pSem3");   
+            sem_unlink ("pSem7");   
             sem_close(sem); 
             printf ("Fork error.\n");
         }
         else if (pid == 0){
-             char *args[]={"./user",NULL}; 
+             //get random number for priority
+             srand(getpid());
+             int value = 0;
+             value =  (rand()%100);
+             if (value <= 10){
+               shmPTR->processBlock[0].queueNo = 1;
+              }
+             else
+               shmPTR->processBlock[0].queueNo = 0;         
+             char *args[]={"./user",str}; 
              execvp(args[0],args); printf("exec error");}
     
     
-    
-    else if (pid != 0){
-          wait(NULL);
-         sem = sem_open("pSem3",0);
+    childProcesses++;}
+    if (pid != 0){
+         
+         sem = sem_open("pSem7",0);
         sem_wait(sem);
-        if (shmPTR->processBlock[0].priority == 1){
-           printf("received");
-                           }
-           
-  
-           sem_post(sem);
-           sem_close(sem);
-           sem_unlink("pSem3");}      
+        shmPTR->processBlock[0].ready = 1;
+        sem_post(sem);
+        sem_close(sem);
+         sleep(2);                    
+          
+           sem_unlink("pSem7");}      
         //killpg(getpgid(getpid()), SIGTERM);
 
         exit (0);
