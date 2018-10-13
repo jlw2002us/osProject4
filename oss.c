@@ -21,7 +21,7 @@
 struct ProcessBlock{
   int queueNo; //1 - high, 0- low
   int flag; //1 - waited, 2- used cpu, 3 -terminated
-  int processID;
+  int ProcessID;
   int ready; //if process is ready to be run = 1
     };
 
@@ -33,7 +33,7 @@ struct Memory{
 };
 
 struct ProcessTable{
-  int processID;
+  int ProcessID;
   long long int arrival_nanoseconds;
   int arrival_seconds;
   long long int cpu_nanoseconds;
@@ -117,43 +117,24 @@ int main (int argc, char **argv){
       }
       else
         shmPTR->processBlock[0].queueNo = 0;
-    
-    
-    if(childProcesses < 1){
-        pid = fork ();
-        
-        if (pid < 0) {
-            sem_unlink ("pSem7");   
-            sem_close(sem); 
-            printf ("Fork error.\n");
-        }
-        else if (pid == 0){
-             //get random number for priority
-             srand(getpid());
-             int value = 0;
-             value =  (rand()%100);
-             if (value <= 10){
-               shmPTR->processBlock[0].queueNo = 1;
-              }
-             else
-               shmPTR->processBlock[0].queueNo = 0;         
-             char *args[]={"./user",str}; 
-             execvp(args[0],args); printf("exec error");}
-    
-    
-    childProcesses++;}
-    if (pid != 0){
-         
-         sem = sem_open("pSem7",0);
-        sem_wait(sem);
-        shmPTR->processBlock[0].ready = 1;
-        sem_post(sem);
-        sem_close(sem);
-         sleep(2);                    
-          
-           sem_unlink("pSem7");}      
-        //killpg(getpgid(getpid()), SIGTERM);
+     pid = fork();
 
+     if (pid == 0)
+                 printf("Hello from Child!\n");
+
+                       // parent process because return value non-zero. 
+       else
+         printf("Hello from Parent!\n");
+                                                                                                           
+    
+                 
+    //        char *args[]={"./user",str}; 
+      //     execvp(args[0],args); printf("exec error");}
+    
+                 
+        //killpg(getpgid(getpid()), SIGTERM);
+        shmdt (shmPTR);
+       shmctl (shmid, IPC_RMID, 0);
         exit (0);
 
     

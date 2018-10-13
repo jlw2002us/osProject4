@@ -31,11 +31,11 @@ struct Memory *shmPTR;
 
 
 int main(int argc, char* argv[]){
-  
+  printf("hello");  
   key_t  ShmKEY;
   int ShmID;
    int n = atoi(argv[1]);
-   
+   int quantum = 2000;
   ShmKEY = ftok(".",'x');
   ShmID = shmget(ShmKEY, sizeof(struct Memory), 0666);
   if (ShmID < 0){
@@ -47,27 +47,28 @@ int main(int argc, char* argv[]){
     printf("*** shmat error(client) ***\n");
     exit(1);
    }
-   //get random number to see if waits, runs, or terminates
-    srand(getpid());
-    int value = 0;
-    value =  (rand()%100);
-    if (value <= 10)//terminate, don't run
-       shmPTR->processBlock[0].flag = 0;
-    if((value > 10) && ( value <= 50))
-       shmPTR->processBlock[0].flag = 1; //run for quantume and then finish
-    if((value > 50)&& ( value <= 70))
-       shmPTR->processBlock[0].flag = 2; //wait for an event
-    else
-       shmPTR->processBlock[0].flag = 3; //get preempted before finishing quantum
+   if(shmPTR->processBlock[n].queueNo == 1)
+     quantum = 1000;
 
      long long int x =0;
-     while(x < 100000){
+     while(x < 10000000){
        
-     sem = sem_open("pSem7",0);
-     sem_wait(sem);
+       sem = sem_open("pSem7",0);
+       sem_wait(sem);
       
-         if(shmPTR->processBlock[0].ready == 1)
-          { printf("Process %ld is running ...\n", (long)getpid());
+         if(shmPTR->processBlock[n].ready == 1)
+          { printf("Process no %d is running ...\n", shmPTR->processBlock[n].ProcessID);
+            int value = 0;
+            value =  (rand()%100);
+            if (value <= 10)//terminate, don't run
+              shmPTR->processBlock[0].flag = 0;
+            if((value > 10) && ( value <= 50))
+              shmPTR->processBlock[0].flag = 1; //run for quantume and then finish
+            if((value > 50)&& ( value <= 70))
+               shmPTR->processBlock[0].flag = 2; //wait for an event
+             if(value >70)
+               shmPTR->processBlock[0].flag = 3; //get preempted before finishing quantum
+
            break;}                                    
         sem_post(sem);                                                                  
         sem_close(sem);
