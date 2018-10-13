@@ -20,22 +20,24 @@
 
  struct ProcessBlock{
     int queueNo; //1 - high, 0- low
-  int flag; //1 - waited, 2- used cpu, 3 -terminated
-  int processID;
+  
+  
   int ready; //if process is ready to be run = 1
     };
 
  struct Memory{
    long long int nanoseconds;
-   int seconds;
-   struct ProcessBlock processBlock[];
+   int seconds;   
+   int totalWaitTime;
+   long long int totalCPU;
+   int terminated; //tell parent that it's done
+   struct ProcessBlock processBlock;
     };
  struct Memory *shmPTR;
  bool signal_interrupt = false;
  int shmid;
  sem_t *sem;
- bool ChildExceeded = false;
-
+ 
 
  void  ALARMhandler(int sig)
  { if(signal_interrupt == false)
@@ -69,14 +71,13 @@
  }
 
  int main (int argc, char **argv){
-     int i = 0; char str[50];
-     snprintf(str, sizeof(str), "%d",i);
-                             /*      loop variables          */
+     int i = 0; 
+     int value = 0;
      key_t shmkey;
      int childProcesses = 0;
      pid_t pid;                    /*      fork pid                */
      signal(SIGTERM, sigtermhandler);
-
+     int processesTerminated = 0;
       shmkey = ftok (".", 'x');       /* valid directory name and a number */
      
      shmid = shmget (shmkey, sizeof (struct Memory), 0666 | IPC_CREAT);
@@ -88,38 +89,51 @@
      shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
      shmPTR->seconds = 0;
      shmPTR->nanoseconds = 0;
+     
                                                  
      
      sem = sem_open ("pSem15", O_CREAT | O_EXCL, 0644, 1); 
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
-      
-       
+     while(processesTerminated < 1){
+     if(childProcesses < 1){       
         if (fork() == 0){
                 //get random number for priority
-             srand(getpid());
-             int value = 0;
+             srand(i);
+             value =  (rand()%100);  
              value =  (rand()%100);
              if (value <= 10){
-               shmPTR->processBlock[0].queueNo = 1;
+               shmPTR->processBlock.queueNo = 1;
               }
              else{
-               shmPTR->processBlock[0].queueNo = 0;}         
+               shmPTR->processBlock.queueNo = 0;}         
                         
-                printf("hello from child");                
-                char *args[]={"./user", NULL}; 
+                 
                 execl("./user", (char*)i, NULL, NULL); 
-      }
-    
-        else{    
+           }
+          
+         else{    
             sem = sem_open("pSem15",0);
-        sem_wait(sem);
-        shmPTR->processBlock[0].ready = 1;
-        sem_post(sem);
-        sem_close(sem);
-         sleep(2);}           
-           sem_unlink("pSem15");      
-         sleep(4);
+            sem_wait(sem);
+            shmPTR->processBlock.ready = 1;
+            sem_post(sem);
+            sem_close(sem);
+            sleep(2);
+            if(shmPTR->terminated == 1){
+               processesTerminated++;
+               
+               break;}}           
+         childProcesses++;}
+          sem = sem_open("pSem15",0);
+            sem_wait(sem);
+            shmPTR->processBlock.ready = 1;
+            sem_post(sem);
+            sem_close(sem);
+            sleep(2);
+             if(shmPTR->terminated == 1)
+               processesTerminated++;
+          }
+         sleep(2);
          killpg(getpgid(getpid()), SIGTERM);
        
          exit (0);
