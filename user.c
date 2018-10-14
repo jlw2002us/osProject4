@@ -45,14 +45,14 @@
     int value = 0;
     int flag = 0;
     long int getrand = getpid();
-    int processID = 0;
+//    int processID =  atoi(argv[3]);
     int quantum = 2000;
     long long int CPUused = 0;     
     long long int x;
     long long int arrival_nanoseconds = 0;
     int arrival_seconds = 0;
     printf("hello from exec");   
-   
+           
    ShmKEY = ftok(".",'x');
    ShmID = shmget(ShmKEY, sizeof(struct Memory), 0666);
    if (ShmID < 0){
@@ -64,17 +64,20 @@
      printf("*** shmat error(client) ***\n");
      exit(1);
     }
-   processID = shmPTR->pidd;
+   int processID = shmPTR->pidd;
+sem = sem_open("pSem24",0); sem_wait(sem);   shmPTR->pidd++;
+sem_post(sem); sem_close(sem);
+   //printf("Process ID is ...%d", processID);
    if( shmPTR->processBlock.queueNo == 1)
      quantum = 1000;    
-while(terminated == 0){               
+while(terminated == 0){
     while(x < 10000000){
                     
-      sem = sem_open("pSem15",0);
+      sem = sem_open("pSem24",0);
       sem_wait(sem);
       
-      if(processID == shmPTR->processID)
-        { printf("Process %d  is dispatched ...\n", processID);
+      if(processID  == shmPTR->processID)
+        { printf("Process %d  is dispatched ...\n",processID);
             srand(getrand++);
             value =  (rand()%100);
             printf("%d", value);
@@ -124,7 +127,7 @@ while(terminated == 0){
           float percentage = (float)p/100;
           shmPTR->nanoseconds = shmPTR->nanoseconds + (long long int)(percentage*quantum);
           shmPTR->totalCPU = shmPTR->totalCPU + (long long int)percentage*quantum;
-          printf("Process %d ran for %lld nanoseconds ..\n", processID, (long long int)(percentage*quantum));
+          printf("Process %ld ran for %lld nanoseconds ..\n", (long)getpid(), (long long int)(percentage*quantum));
           shmPTR->terminated = 0;
           
           terminated = 0;

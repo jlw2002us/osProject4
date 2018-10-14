@@ -30,13 +30,13 @@
    int seconds;   
    int totalWaitTime;
    int HighStackQueue[20];
-     int LowStackQueue[20];
+   int LowStackQueue[20];
   int j;
   int k;
   int pidd;
   int highStackNo;
   int LowStackNo;
-   int processID;
+  int processID;
    long long int totalCPU;
    int terminated; //tell parent that it's done
    struct ProcessBlock processBlock;
@@ -61,7 +61,7 @@
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem15");   
+   sem_unlink ("pSem24");   
     sem_close(sem);  
 
  exit(0);
@@ -106,7 +106,7 @@
      
                                                  
      
-     sem = sem_open ("pSem15", O_CREAT | O_EXCL, 0644, 1); 
+     sem = sem_open ("pSem24", O_CREAT | O_EXCL, 0644, 1); 
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      
@@ -114,8 +114,11 @@
         if (fork() == 0){
                 //get random number for priority
              srand(i);
-             value =  (rand()%100);  
-             shmPTR->pidd = i;
+//             fprintf(stderr,"%ld", (long)getpid());
+             value =  (rand()%100);
+//             sem = sem_open("pSem15",0); sem_wait(sem);  
+              shmPTR->pidd++;//sem_post(sem);sem_close(sem);
+             //fprintf(stderr,"%d",shmPTR->pidd);
              //process IDs in queues- low or high
              if (value <=  0){
                shmPTR->processBlock.queueNo = 1;
@@ -128,16 +131,17 @@
                shmPTR->LowStackNo++;
                 }    
                         
-                char *args[]={"./user",NULL}; 
+                char *args[]={"./user", NULL}; 
                 execvp(args[0],args); 
-      
-                //execl("./user", (char*)i, NULL, NULL); 
+    //            char arg1[10];
+  //              snprintf(arg1, 10, "%d",i);
+      //          execlp("./user", "./user", arg1,(char*)NULL); 
           }
           
-         else{  sleep(2);
+         else{   sleep(2);
                
-           sem = sem_open("pSem15",0);
-           sem_wait(sem);
+           sem = sem_open("pSem24",0);
+           sem_wait(sem); 
             if(shmPTR->highStackNo != 0){high = true;
              shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
             else if(shmPTR->LowStackNo != 0){ 
@@ -168,8 +172,8 @@
 
             }}           
            childProcesses++;i++;}
-         while(processesTerminated < 2){//fprintf(stderr,"%d",shmPTR->LowStackNo);
-            sem = sem_open("pSem15",0);
+         while(processesTerminated < 2){fprintf(stderr,"%d",shmPTR->LowStackNo);
+            sem = sem_open("pSem22",0);
             sem_wait(sem);
             if(shmPTR->highStackNo != 0){high = true;
                shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
