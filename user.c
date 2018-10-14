@@ -41,7 +41,7 @@ int main(){
    int quantum = 2000;
    int terminated = 0;
    int value = 0;
-   long long int x;
+   long long int x = 0;
    int flag = 0;
    int processID = 0;
    ShmKEY = ftok(".",'x');
@@ -59,13 +59,14 @@ int main(){
      printf("%d", shmPTR->LoopVar);
      if( shmPTR->queueNo == 1)
      quantum = 1000;
-  while(terminated == 0){ 
+  printf("next in queue is %d\n", shmPTR->processID);
+  while(terminated == 0){  
     while(x < 100000){
       
-      sem = sem_open("pSem30",0);
+      sem = sem_open("pSem35",0);
       sem_wait(sem);
 
-      if(processID  == shmPTR->processID){
+      if(processID  == shmPTR->processID){ 
          printf("Process %d  is dispatched ...\n",processID);
          srand(getrand++);
          value =  (rand()%100);
@@ -78,7 +79,7 @@ int main(){
             flag = 2; //wait for an event
          if(value >70)
             flag = 3; //get preempted before finishing quantum
-           sem_post(sem); sem_close(sem);break;}
+         break;}
         
          sem_post(sem);
          sem_close(sem);  
@@ -123,7 +124,7 @@ int main(){
          printf("Error");
          break;          
      }
-    }
+    sem_post(sem); sem_close(sem);}
     shmdt((void *) shmPTR);
     exit(0);
 }
