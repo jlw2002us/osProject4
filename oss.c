@@ -110,7 +110,7 @@
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      
-    while(childProcesses < 2){       
+    for(i = 0; i < 2; i++){shmPTR->pidd++;       
         if (fork() == 0){
                 //get random number for priority
              srand(i);
@@ -138,7 +138,7 @@
       //          execlp("./user", "./user", arg1,(char*)NULL); 
           }
           
-         else{   sleep(2);
+         else{   sleep(5);
                
            sem = sem_open("pSem24",0);
            sem_wait(sem); 
@@ -171,7 +171,7 @@
                  low = false; shmPTR->k++;}
 
             }}           
-           childProcesses++;i++;}
+           }
          while(processesTerminated < 2){fprintf(stderr,"%d",shmPTR->LowStackNo);
             sem = sem_open("pSem22",0);
             sem_wait(sem);
