@@ -13,6 +13,7 @@
 
 struct Memory{
    int queueNo;
+   int finished;
    long long int nanoseconds;
    int seconds;   
    int totalWaitTime;
@@ -36,7 +37,7 @@ int main(){
    sem_t *sem;
    long int getrand =  getpid();
    struct Memory *shmPTR;
-    printf("hello from exec");   
+//    printf("hello from exec");   
    key_t ShmKEY;
    int quantum = 2000;
    int terminated = 0;
@@ -56,21 +57,21 @@ int main(){
      exit(1);
     }
      processID = shmPTR->LoopVar;
-//     printf("%d", shmPTR->LoopVar);
+     printf("%d", shmPTR->queueNo);
      if( shmPTR->queueNo == 1)
      quantum = 1000;
-  
-  while(terminated == 0){  
+     
+  while(terminated == 0){   
     while(x < 100000){
       
-      sem = sem_open("pSem36",0);
+      sem = sem_open("pSem39",0);
       sem_wait(sem);
 
       if(processID  == shmPTR->processID){ 
          printf("Process %d  is dispatched ...\n",processID);
          srand(getrand++);
          value =  (rand()%100);
-         printf("%d", value);
+  //       printf("%d", value);
          if (value <= 10)//terminate, don't run
             flag = 0;
          if((value > 10) && ( value <= 50))
@@ -88,12 +89,14 @@ int main(){
       case 0: 
          shmPTR->terminated = 1;
          terminated = 1;
+         shmPTR->finished = 1;
          printf("Process %d terminated .. \n", processID);
          break;
       case 1:
          shmPTR->nanoseconds = shmPTR->nanoseconds + quantum;
          shmPTR->terminated = 1;
          terminated = 1;
+         shmPTR->finished = 1;
          printf("Process %d ran for %d nanoseconds and terminated.. \n",processID,quantum);
          shmPTR->totalCPU = shmPTR->totalCPU + quantum;
          break;
@@ -106,7 +109,7 @@ int main(){
           shmPTR->nanoseconds = shmPTR->nanoseconds + s;
           printf("Process %d waited for event for %d seconds, %d nanoseconds..\n", processID, r, s);
           shmPTR->terminated = 0;
-
+          shmPTR->finished = 1;
           terminated = 0;
           break;
       case 3:
@@ -117,7 +120,7 @@ int main(){
           shmPTR->totalCPU = shmPTR->totalCPU + (long long int)percentage*quantum;
           printf("Process %d ran for %lld nanoseconds ..\n", processID, (long long int)(percentage*quantum));
           shmPTR->terminated = 0;
-
+          shmPTR->finished = 1;
           terminated = 0;
           break;
       default:

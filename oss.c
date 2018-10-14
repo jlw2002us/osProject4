@@ -15,9 +15,10 @@
 
 struct Memory{
    int queueNo;
+   int finished;
    long long int nanoseconds;
    int seconds;   
-   int totalWaitTime;
+   int totalWaitTime;//seconds
    int HighStackQueue[20];
    int LowStackQueue[20];
   int j;
@@ -39,7 +40,7 @@ struct Memory{
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem36");   
+   sem_unlink ("pSem39");   
     sem_close(sem);  
 
  exit(0);
@@ -67,7 +68,7 @@ int main(){
                                  }
      //
      shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
-     sem = sem_open ("pSem36", O_CREAT | O_EXCL, 0644, 1); 
+     sem = sem_open ("pSem39", O_CREAT | O_EXCL, 0644, 1); 
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      shmPTR->highStackNo = 0;
@@ -81,16 +82,19 @@ int main(){
                value =  (rand()%100);
 
              //process IDs in queues- low or high
-             if (value <=  0){
+             if (value <=  10){
+               sem = sem_open("pSem39",0); sem_wait(sem);
                shmPTR->queueNo = 1;
                shmPTR->HighStackQueue[shmPTR->j] = i; shmPTR->j++;
-               shmPTR->highStackNo++;
+               shmPTR->highStackNo++; sem_post(sem); sem_close(sem);
+               fprintf(stderr,"Process %d is added to high priority queue\n",i);
               }
              else{
-               sem = sem_open("pSem36",0); sem_wait(sem);
+               sem = sem_open("pSem39",0); sem_wait(sem);
                shmPTR->queueNo = 0;
                shmPTR->LowStackQueue[shmPTR->k] = i;shmPTR->k++;
                shmPTR->LowStackNo++;sem_post(sem);sem_close(sem);
+               fprintf(stderr,"Process %d is added to low prioirty queue\n",i);
                 }    
 
               shmPTR->LoopVar = i;
@@ -98,25 +102,33 @@ int main(){
                 execvp(args[0],args); printf("Exec error"); 
            }
        else{
-             sleep(2);
-             sem = sem_open("pSem36",0);
-              sem_wait(sem); 
+               
+             sleep(1);
+                
+              
+                 sem = sem_open("pSem39", 0); sem_wait(sem);
+                 
+              //rotate queues 
               if(shmPTR->highStackNo != 0){high = true;
                 shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];
+                
+                 shmPTR->finished = 0;
                  sem_post(sem); sem_close(sem);
            }
               
              else if(shmPTR->LowStackNo != 0){ 
                low = true; 
                shmPTR->processID = shmPTR->LowStackQueue[shmPTR->k - shmPTR->LowStackNo];
-               //fprintf(stderr,"%d",shmPTR->processID);
+               
+               shmPTR->finished = 0;
                sem_post(sem); sem_close(sem);
               }
-            else{ fprintf(stderr, "%s", "Both queues empty");
+            else { fprintf(stderr, "%s", "Both queues empty");
                  sem_post(sem);
                  sem_close(sem);}
-                 sleep(3);
-            sem_open("pSem36", 0);sem_wait(sem);
+                 sleep(1);
+            //add to queues or delete
+            sem_open("pSem39", 0);sem_wait(sem);
             if(shmPTR->terminated == 1){
                processesTerminated++;
               if(high == true){
@@ -132,10 +144,16 @@ int main(){
 
                if(high == true){
                  shmPTR->HighStackQueue[shmPTR->j] = shmPTR->processID;
-                 high = false; shmPTR->j++; sem_post(sem); sem_close(sem);}
+                 high = false; shmPTR->j++; 
+                 sem_post(sem); sem_close(sem);
+                  fprintf(stderr,"Process %d is added to high prioirty queue\n",i);
+                }
                if(low == true){ 
                 shmPTR->LowStackQueue[shmPTR->k] = shmPTR->processID;
-                low = false; shmPTR->k++;sem_post(sem);sem_close(sem);}
+                low = false; shmPTR->k++;
+                 fprintf(stderr,"Process %d is added to low prioirty queue\n",i);
+ 
+                sem_post(sem);sem_close(sem);}
 
             }}    
             }
