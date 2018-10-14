@@ -29,11 +29,11 @@
    long long int nanoseconds;
    int seconds;   
    int totalWaitTime;
-   int pidd;
    int HighStackQueue[20];
      int LowStackQueue[20];
   int j;
   int k;
+  int pidd;
   int highStackNo;
   int LowStackNo;
    int processID;
@@ -61,7 +61,7 @@
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem2");   
+   sem_unlink ("pSem15");   
     sem_close(sem);  
 
  exit(0);
@@ -84,7 +84,6 @@
      bool high = false;
      bool low = false;
      key_t shmkey;
-     pid_t pid;
 //     int HighStackQueue[20];
   //   int LowStackQueue[20];
      //int highStackNo = 0;
@@ -107,97 +106,98 @@
      
                                                  
      
-     sem = sem_open ("pSem2", O_CREAT | O_EXCL, 0644, 1); 
+     sem = sem_open ("pSem15", O_CREAT | O_EXCL, 0644, 1); 
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
-     for(i=0; i < 2; i++){
-    
-        
-          if ((pid = fork()) == 0){
-               //char str[50];
-               //snprintf(str, sizeof(str), "%d", i);
-
-               shmPTR->pidd = i; //process ID
-               
-               
-               srand(i);
-               value =  (rand()%100);  
-             
-    //         process IDs in queues- low or high
-               if (value <  0){
-                 shmPTR->processBlock.queueNo = 1;
-                 shmPTR->HighStackQueue[shmPTR->j] = i; shmPTR->j++;
-                 shmPTR->highStackNo++;
-               }
-              else{
-                  shmPTR->processBlock.queueNo = 0;
-                  shmPTR->LowStackQueue[shmPTR->k] = i;shmPTR->k++;
-                  shmPTR->LowStackNo++;
-                  
-               }    
-                        
-                       char *args[]={"./user",NULL}; 
-                       execvp(args[0],args); 
-//                     execlp("./user", str, NULL, NULL); 
-            }
-          
-          else{  sleep(2);
-               
-              sem = sem_open("pSem17",0);
-              sem_wait(sem);
-              if(shmPTR->highStackNo != 0){high = true;
-               shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
-              else if(shmPTR->LowStackNo != 0){ 
-                low = true; 
-                shmPTR->processID = shmPTR->LowStackQueue[shmPTR->k - shmPTR->LowStackNo];
-                fprintf(stderr,"%d",shmPTR->processID);
+     
+    while(childProcesses < 2){       
+        if (fork() == 0){
+                //get random number for priority
+             srand(i);
+             value =  (rand()%100);  
+             shmPTR->pidd = i;
+             //process IDs in queues- low or high
+             if (value <=  0){
+               shmPTR->processBlock.queueNo = 1;
+               shmPTR->HighStackQueue[shmPTR->j] = i; shmPTR->j++;
+               shmPTR->highStackNo++;
               }
-             sem_post(sem);
-             sem_close(sem);
+             else{
+               shmPTR->processBlock.queueNo = 0;
+               shmPTR->LowStackQueue[shmPTR->k] = i;shmPTR->k++;
+               shmPTR->LowStackNo++;
+                }    
+                        
+                char *args[]={"./user",NULL}; 
+                execvp(args[0],args); 
+      
+                //execl("./user", (char*)i, NULL, NULL); 
+          }
+          
+         else{  sleep(2);
+               
+           sem = sem_open("pSem15",0);
+           sem_wait(sem);
+            if(shmPTR->highStackNo != 0){high = true;
+             shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
+            else if(shmPTR->LowStackNo != 0){ 
+              low = true;
+              shmPTR->processID = shmPTR->LowStackQueue[shmPTR->k - shmPTR->LowStackNo];
+            }
+            sem_post(sem);
+            sem_close(sem);
             sleep(2);
             if(shmPTR->terminated == 1){
               processesTerminated++;
+               if(high == true){
+                 shmPTR->highStackNo--; 
+                  high = false;}
+               if(low == true){
+                 shmPTR->LowStackNo--;
+                  low = false;}
+               
+               }
+            else{
+              
+              if(high == true){
+                shmPTR->HighStackQueue[shmPTR->j] = shmPTR->processID;
+                high = false; shmPTR->j++; }
+              if(low == true){ 
+                 shmPTR->LowStackQueue[shmPTR->k] = shmPTR->processID;
+                 low = false; shmPTR->k++;}
+
+            }}           
+           childProcesses++;i++;}
+         while(processesTerminated < 2){//fprintf(stderr,"%d",shmPTR->LowStackNo);
+            sem = sem_open("pSem15",0);
+            sem_wait(sem);
+            if(shmPTR->highStackNo != 0){high = true;
+               shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
+               else if(shmPTR->LowStackNo != 0){ low = true;
+                 shmPTR->processID = shmPTR->LowStackQueue[shmPTR->k - shmPTR->LowStackNo];
+                // fprintf(stderr,"%d",shmPTR->processID);
+                }
+              sem_post(sem);
+              sem_close(sem);
+              
+              sleep(2);
+             
+             if(shmPTR->terminated == 1){  //fprintf(stderr,"%d",shmPTR->processID);
                if(high == true){
                  shmPTR->highStackNo--; 
                  high = false;}
                if(low == true){
                  shmPTR->LowStackNo--;
                  low = false;}
-               
-               }}}
-            
-         //if(pid != 0){
-           //printf("hi");         
-           //sem = sem_open("pSem15",0);
-           //sem_wait(sem);
-           //if(shmPTR->highStackNo != 0){high = true;
-             // shmPTR->processID = shmPTR->HighStackQueue[shmPTR->j - shmPTR->highStackNo];}
-              //else if(shmPTR->LowStackNo != 0){ low = true;
-                //shmPTR->processID = shmPTR->LowStackQueue[shmPTR->k - shmPTR->LowStackNo];
-                // fprintf(stderr,"%d",shmPTR->processID);
-               // }
-              //sem_post(sem);
-              //sem_close(sem);
-              
-              //sleep(2);
-             
-              //if(shmPTR->terminated == 1){  //fprintf(stderr,"%d",shmPTR->processID);
-                //if(high == true){
-                  //shmPTR->highStackNo--; 
-                  //high = false;}
-                //if(low == true){
-                  //shmPTR->LowStackNo--;
-                  //low = false;}
-                //processesTerminated++;}
-              // else{
-                // if(high == true){
-                  //shmPTR->HighStackQueue[shmPTR->j] = shmPTR->processID;
-                  //high = false; shmPTR->j++;}
-                 //if(low == true){
-                   //shmPTR->LowStackQueue[shmPTR->k] = shmPTR->processID;
-                   //low = false; shmPTR->k++;}}
-          // }  
-         //}
+               processesTerminated++;}
+              else{
+                 if(high == true){
+                   shmPTR->HighStackQueue[shmPTR->j] = shmPTR->processID;
+                    high = false; shmPTR->j++;}
+               if(low == true){
+                 shmPTR->LowStackQueue[shmPTR->k] = shmPTR->processID;
+                 low = false; shmPTR->k++;}}
+         }
          sleep(2);
          killpg(getpgid(getpid()), SIGTERM);
        
