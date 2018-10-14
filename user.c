@@ -34,7 +34,7 @@ int ShmID;
 
 int main(){
    sem_t *sem;
-   long int getrand = 0;
+   long int getrand =  getpid();
    struct Memory *shmPTR;
     printf("hello from exec");   
    key_t ShmKEY;
@@ -56,14 +56,14 @@ int main(){
      exit(1);
     }
      processID = shmPTR->LoopVar;
-     printf("%d", shmPTR->LoopVar);
+//     printf("%d", shmPTR->LoopVar);
      if( shmPTR->queueNo == 1)
      quantum = 1000;
-  printf("next in queue is %d\n", shmPTR->processID);
+  
   while(terminated == 0){  
     while(x < 100000){
       
-      sem = sem_open("pSem35",0);
+      sem = sem_open("pSem36",0);
       sem_wait(sem);
 
       if(processID  == shmPTR->processID){ 
