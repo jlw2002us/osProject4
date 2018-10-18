@@ -15,10 +15,10 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[50];
+   int HighStackQueue[90];
    int HighStackPointer;
    int HighStackNo;
-   int LowStackQueue[50];
+   int LowStackQueue[90];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -74,7 +74,7 @@ int main(){
               shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
               //else break;
         
-//            fprintf(stderr,"Next process is %d\n", shmPTR->NextProcess);
+//         fprintf(stderr,"Next process is %d\n", shmPTR->NextProcess);
          if(processID  == shmPTR->NextProcess){ 
          shmPTR->ReadyProcessID = processID;
          
@@ -140,7 +140,7 @@ int main(){
         
          printf("Error");
          break;
-     } fprintf(stderr, "Terminated value is%d\n", terminated); sleep(2); sem = sem_open("pSem55",1);sem_post(sem); sem_close(sem);
+     }  sleep(1); sem = sem_open("pSem60",1);sem_post(sem); sem_close(sem);
        
        }
     

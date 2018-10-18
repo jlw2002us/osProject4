@@ -18,10 +18,10 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[50];
+   int HighStackQueue[90];
    int HighStackPointer;
    int HighStackNo;
-   int LowStackQueue[50];
+   int LowStackQueue[90];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -42,7 +42,7 @@ struct Memory{
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem55");
+   sem_unlink ("pSem60");
     sem_close(sem);
 
  exit(0);
@@ -68,13 +68,13 @@ int main(){
 
 }
 shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
-     sem = sem_open ("pSem55", O_CREAT | O_EXCL, 0644, 0);
+     sem = sem_open ("pSem60", O_CREAT | O_EXCL, 0644, 0);
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      shmPTR->LowStackPointer = 0;
-
+     shmPTR->lowStackNo = 0;
      int nochildProcesses = 0;
-    for(i = 0; i < 2; i++)
+    for(i = 0; i < 10; i++)
 
     {    nochildProcesses++;
         if(fork() == 0)
@@ -103,28 +103,28 @@ shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memo
                 execvp(args[0],args); printf("Exec error");
 
           }
-        else{ sleep(2);
-              while(processesTerminated < 2){
-                 fprintf(stderr, "child process value is %d\n",nochildProcesses);        
-                 sem_open("pSem55",0); sem_wait(sem);
+        else{ //sleep(1);
+              while(processesTerminated < 10){
+                         
+                 sem_open("pSem60",0); sem_wait(sem);
                  if(shmPTR->finished ==1){
                    shmPTR->LowStackPointer++;
                    processesTerminated++;
-                   shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];}
-                
+                   //shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];}
+                  }                
                   else{
                    shmPTR->LowStackQueue[shmPTR->lowStackNo] = shmPTR->ReadyProcessID;
                     
                    shmPTR->lowStackNo++;
                    shmPTR->LowStackPointer++;
                     fprintf(stderr, "Process %d is added to low priority queue\n", shmPTR->processID);
-                    shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
+                    //shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
                  }
                    int j;
-                    for( j = shmPTR->lowStackNo-1; j>=0; j--)
-                       fprintf(stderr,"%d",shmPTR->LowStackQueue[j]);
+//                    for( j = shmPTR->lowStackNo-1; j>=0; j--)
+  //                     fprintf(stderr,"%d",shmPTR->LowStackQueue[j]);
                   
-                   if(nochildProcesses  < 2) break; }                
+                   if(nochildProcesses  < 10) break; }                
        
        } }
            sleep(4);
