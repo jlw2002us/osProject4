@@ -1,5 +1,4 @@
-
- #include<string.h>
+#include<string.h>
  #include <stdio.h>          /* printf()                 */
  #include <stdlib.h>         /* exit(), malloc(), free() */
  #include <sys/types.h>      /* key_t, sem_t, pid_t      */
@@ -12,39 +11,46 @@
  #include <wait.h>
 
 struct Memory{
-   int queueNo;
+    int queueNo;
    int finished;
+   int NextProcess;
+   int processID;
+   int HighStackQueue[50];
+   int HighStackPointer;
+   int HighStackNo;
+   int LowStackQueue[50];
+   int LowStackPointer;
+   int lowStackNo;
    long long int nanoseconds;
-   int seconds;   
-   int totalWaitTime;
-   int HighStackQueue[20];
-   int LowStackQueue[20];
-  int j;
-  int k;
-  int LoopVar;
-  int highStackNo;
-  int LowStackNo;
-  int processID;
+   int seconds;
+   int ReadyProcessID;
+   int totalWaitTime;//seconds
+   long long int totalWaitnano;
+   int totalcpuseconds;
+  int readyProcessID;
    long long int totalCPU;
-   int terminated; //tell parent that it's done
-   
+
+
+
 };
 
-int ShmID;
-
+   int ShmID;
+int j;
 
 int main(){
    sem_t *sem;
    long int getrand =  getpid();
    struct Memory *shmPTR;
-//    printf("hello from exec");   
    key_t ShmKEY;
    int quantum = 2000;
    int terminated = 0;
    int value = 0;
-   long long int x = 0;
+   
+   //long long int x = 0;
    int flag = 0;
+   //int NextProcess = 0;
    int processID = 0;
+   
    ShmKEY = ftok(".",'x');
    ShmID = shmget(ShmKEY, sizeof(struct Memory), 0666);
    if (ShmID < 0){
@@ -56,78 +62,92 @@ int main(){
      printf("*** shmat error(client) ***\n");
      exit(1);
     }
-     processID = shmPTR->LoopVar;
-     printf("%d", shmPTR->queueNo);
+     shmPTR->LowStackQueue[shmPTR->lowStackNo] = shmPTR->processID;
+     shmPTR->lowStackNo++;
+     processID = shmPTR->processID;
+     printf("My process ID is %d\n", shmPTR->processID);
      if( shmPTR->queueNo == 1)
-     quantum = 1000;
-     
-  while(terminated == 0){   
-    while(x < 100000){
-      
-      sem = sem_open("pSem39",0);
-      sem_wait(sem);
-
-      if(processID  == shmPTR->processID){ 
-         printf("Process %d  is dispatched ...\n",processID);
-         srand(getrand++);
-         value =  (rand()%100);
-  //       printf("%d", value);
-         if (value <= 10)//terminate, don't run
-            flag = 0;
-         if((value > 10) && ( value <= 50))
-            flag = 1; //run for quantume and then finish
-         if((value > 50)&& ( value <= 70))
-            flag = 2; //wait for an event
-         if(value >70)
-            flag = 3; //get preempted before finishing quantum
-         break;}
+      quantum = 1000;
         
-         sem_post(sem);
-         sem_close(sem);  
-          x++; }
-      switch(flag){
-      case 0: 
-         shmPTR->terminated = 1;
-         terminated = 1;
-         shmPTR->finished = 1;
-         printf("Process %d terminated .. \n", processID);
-         break;
+    while(terminated == 0){ //printf("hi");
+             //if(shmPTR->lowStackNo != shmPTR->LowStackPointer)                   
+              shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
+              //else break;
+        
+//            fprintf(stderr,"Next process is %d\n", shmPTR->NextProcess);
+         if(processID  == shmPTR->NextProcess){ 
+         shmPTR->ReadyProcessID = processID;
+         
+                       
+         printf("Process %d  is dispatched ...\n",processID);
+         srand(getrand++); 
+         value =  (rand()%100);
+        //printf("%d",value);
+        if (value <= 10)//terminate, don't run
+            flag = 1;
+         if((value > 10) && ( value <= 50))
+            flag = 2; //run for quantume and then finish
+         if((value > 50)&& ( value <= 70))
+            flag = 3; //wait for an event
+         if(value >70)
+            flag = 4; //get preempted before finishing quantum
+         
+
+       switch(flag){
       case 1:
-         shmPTR->nanoseconds = shmPTR->nanoseconds + quantum;
-         shmPTR->terminated = 1;
-         terminated = 1;
-         shmPTR->finished = 1;
-         printf("Process %d ran for %d nanoseconds and terminated.. \n",processID,quantum);
-         shmPTR->totalCPU = shmPTR->totalCPU + quantum;
+  
+          terminated = 1;
+          shmPTR->finished = 1;
+
+         printf("Process %d terminated .. \n", processID);
+         
          break;
       case 2:
-          srand(getrand++);
+//         shmPTR->ProcessesTerminated++;
+         shmPTR->nanoseconds = shmPTR->nanoseconds + quantum;
+         terminated = 1;
+         shmPTR->finished = 1;
+          //printf("Low stack pointer is  %d\n", shmPTR->LowStackPointer);
+         printf("Process %d ran for %d nanoseconds and terminated.. \n",processID,quantum);
+         shmPTR->totalCPU = shmPTR->totalCPU + quantum;
+         
+         break;
+      case 3:
+
+      srand(getrand++);
           int r = (rand()%5);
           srand(getrand++);
           int s = (rand()%1000);
           shmPTR->seconds = shmPTR->seconds + r;
           shmPTR->nanoseconds = shmPTR->nanoseconds + s;
           printf("Process %d waited for event for %d seconds, %d nanoseconds..\n", processID, r, s);
-          shmPTR->terminated = 0;
-          shmPTR->finished = 1;
+          shmPTR->finished = 0;
           terminated = 0;
+          
           break;
-      case 3:
+     case 4:
           srand(getrand++);
           int p = 1 + (rand()%99);
-             float percentage = (float)p/100;
+          float percentage = (float)p/100;
           shmPTR->nanoseconds = shmPTR->nanoseconds + (long long int)(percentage*quantum);
           shmPTR->totalCPU = shmPTR->totalCPU + (long long int)percentage*quantum;
           printf("Process %d ran for %lld nanoseconds ..\n", processID, (long long int)(percentage*quantum));
-          shmPTR->terminated = 0;
-          shmPTR->finished = 1;
+          shmPTR->finished = 0;
           terminated = 0;
+          
           break;
       default:
+        
          printf("Error");
-         break;          
+         break;
+     } fprintf(stderr, "Terminated value is%d\n", terminated); sleep(2); sem = sem_open("pSem55",1);sem_post(sem); sem_close(sem);
+       
+       }
+    
+    
+
      }
-    sem_post(sem); sem_close(sem);}
     shmdt((void *) shmPTR);
     exit(0);
+
 }
