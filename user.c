@@ -1,3 +1,4 @@
+
 #include<string.h>
  #include <stdio.h>          /* printf()                 */
  #include <stdlib.h>         /* exit(), malloc(), free() */
@@ -15,10 +16,10 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[200];
+   int HighStackQueue[50];
    int HighStackPointer;
    int HighStackNo;
-   int LowStackQueue[200];
+   int LowStackQueue[50];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -46,7 +47,7 @@ int main(){
    int quantum = 2000;
    int terminated = 0;
    int value = 0;
-      sem2 = sem_open ("sem10", O_CREAT | O_EXCL, 0644, 0);
+      sem2 = sem_open ("sem24", O_CREAT | O_EXCL, 0644, 0);
    
    //long long int x = 0;
    int flag = 0;
@@ -142,8 +143,8 @@ int main(){
         
          printf("Error");
          break;
-     }    sem = sem_open("pSem81",1);sem_post(sem); sem_close(sem);
-        sem2 = sem_open("sem10",0); sem_wait(sem2);
+     }    sem = sem_open("pSem95",1);sem_post(sem); sem_close(sem);
+        sem2 = sem_open("sem24",0); sem_wait(sem2);
        }
     
     

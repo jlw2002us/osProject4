@@ -18,11 +18,11 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[200];
+   int HighStackQueue[50];
    int HighStackPointer;
    int HighStackNo;
 //   long long int x;
-   int LowStackQueue[200];
+   int LowStackQueue[50];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -43,8 +43,8 @@ struct Memory{
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem81");
-   sem_unlink("sem10");
+   sem_unlink ("pSem95");
+   sem_unlink("sem24");
     sem_close(sem);
 
  exit(0);
@@ -54,8 +54,9 @@ struct Memory{
 int main(){
     long int getrand = getpid();
    key_t shmkey;
-   int i = 0; alarm(2);
+   int i = 0; //alarm(2);
    long long int x;
+   int seconds = 0; long long int nanoseconds = 0;
    signal(SIGTERM,sigtermhandler);
     int processesTerminated = 0;   
      int value = 0;
@@ -71,12 +72,14 @@ int main(){
 
 }
 shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
-     sem = sem_open ("pSem81", O_CREAT | O_EXCL, 0644, 0);
+     sem = sem_open ("pSem95", O_CREAT | O_EXCL, 0644, 0);
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      shmPTR->LowStackPointer = 0;
      shmPTR->lowStackNo = 0;
      int nochildProcesses = 0;
+     shmPTR->seconds = 0;
+     shmPTR->nanoseconds = 0;
     for(i = 0; i < 18; i++)
 
     {    nochildProcesses++;
@@ -109,7 +112,7 @@ shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memo
         else{ //sleep(1);
               while(processesTerminated < 18){
                          
-                 sem_open("pSem81",0); sem_wait(sem);
+                 sem_open("pSem95",0); sem_wait(sem);
                  if(shmPTR->finished ==1){
                    shmPTR->LowStackPointer++;
                    processesTerminated++;
@@ -123,12 +126,25 @@ shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memo
                    shmPTR->LowStackPointer++;
                     fprintf(stderr, "Process %d is added to low priority queue\n", shmPTR->ReadyProcessID);
                     //shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
-                 } //sleep(1);
-                     for(x = 0; x < 10000000; x++){ }
+                 }   seconds = 0; nanoseconds = 0;
+                     while(seconds < 1){
+                         shmPTR->nanoseconds = shmPTR->nanoseconds + 1000;
+                         nanoseconds = nanoseconds + 1000;
+                         if(nanoseconds >= 1000000000){
+                            seconds++;
+                            nanoseconds = nanoseconds - 1000000000;
+                          }
+                         if(shmPTR->nanoseconds >= 1000000000){
+                            
+                            shmPTR->seconds++;
+                            shmPTR->nanoseconds - shmPTR->nanoseconds - 1000000000;
+                          }
+
+                     }
                     //for( j = shmPTR->lowStackNo-1; j>=0; j--)
                       //   fprintf(stderr,"%d",shmPTR->LowStackQueue[j]);
                   
-                   sem2 = sem_open("sem10",1); sem_post(sem2);sem_close(sem2);
+                   sem2 = sem_open("sem24",1); sem_post(sem2);sem_close(sem2);
                    if(nochildProcesses  < 18)
                       break; }                
        
