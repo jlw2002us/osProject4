@@ -15,10 +15,10 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[90];
+   int HighStackQueue[200];
    int HighStackPointer;
    int HighStackNo;
-   int LowStackQueue[90];
+   int LowStackQueue[200];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -38,13 +38,15 @@ struct Memory{
 int j;
 
 int main(){
-   sem_t *sem;
+   sem_t *sem ;
+   sem_t *sem2;
    long int getrand =  getpid();
    struct Memory *shmPTR;
    key_t ShmKEY;
    int quantum = 2000;
    int terminated = 0;
    int value = 0;
+      sem2 = sem_open ("sem10", O_CREAT | O_EXCL, 0644, 0);
    
    //long long int x = 0;
    int flag = 0;
@@ -65,7 +67,7 @@ int main(){
      shmPTR->LowStackQueue[shmPTR->lowStackNo] = shmPTR->processID;
      shmPTR->lowStackNo++;
      processID = shmPTR->processID;
-     printf("My process ID is %d\n", shmPTR->processID);
+//     printf("My process ID is %d\n", shmPTR->processID);
      if( shmPTR->queueNo == 1)
       quantum = 1000;
         
@@ -140,8 +142,8 @@ int main(){
         
          printf("Error");
          break;
-     }  sleep(1); sem = sem_open("pSem60",1);sem_post(sem); sem_close(sem);
-       
+     }    sem = sem_open("pSem81",1);sem_post(sem); sem_close(sem);
+        sem2 = sem_open("sem10",0); sem_wait(sem2);
        }
     
     

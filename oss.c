@@ -18,10 +18,11 @@ struct Memory{
    int finished;
    int NextProcess;
    int processID;
-   int HighStackQueue[90];
+   int HighStackQueue[200];
    int HighStackPointer;
    int HighStackNo;
-   int LowStackQueue[90];
+//   long long int x;
+   int LowStackQueue[200];
    int LowStackPointer;
    int lowStackNo;
    long long int nanoseconds;
@@ -42,7 +43,8 @@ struct Memory{
    write (STDOUT_FILENO,"Process terminated\n",16);
    shmdt (shmPTR);
    shmctl (shmid, IPC_RMID, 0);
-   sem_unlink ("pSem60");
+   sem_unlink ("pSem81");
+   sem_unlink("sem10");
     sem_close(sem);
 
  exit(0);
@@ -52,11 +54,12 @@ struct Memory{
 int main(){
     long int getrand = getpid();
    key_t shmkey;
-   int i = 0;
+   int i = 0; alarm(2);
+   long long int x;
    signal(SIGTERM,sigtermhandler);
     int processesTerminated = 0;   
      int value = 0;
-  
+     sem_t *sem2;
         
       shmkey = ftok (".", 'x');       /* valid directory name and a number */
 
@@ -68,13 +71,13 @@ int main(){
 
 }
 shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memory */
-     sem = sem_open ("pSem60", O_CREAT | O_EXCL, 0644, 0);
+     sem = sem_open ("pSem81", O_CREAT | O_EXCL, 0644, 0);
       printf ("semaphores initialized.\n\n");
      sem_close(sem);
      shmPTR->LowStackPointer = 0;
      shmPTR->lowStackNo = 0;
      int nochildProcesses = 0;
-    for(i = 0; i < 10; i++)
+    for(i = 0; i < 18; i++)
 
     {    nochildProcesses++;
         if(fork() == 0)
@@ -104,30 +107,33 @@ shmPTR  = (struct Memory *) shmat (shmid, NULL, 0);   /* attach p to shared memo
 
           }
         else{ //sleep(1);
-              while(processesTerminated < 10){
+              while(processesTerminated < 18){
                          
-                 sem_open("pSem60",0); sem_wait(sem);
+                 sem_open("pSem81",0); sem_wait(sem);
                  if(shmPTR->finished ==1){
                    shmPTR->LowStackPointer++;
                    processesTerminated++;
                    //shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];}
-                  }                
+                  }      
+                //  sleep(1);          
                   else{
                    shmPTR->LowStackQueue[shmPTR->lowStackNo] = shmPTR->ReadyProcessID;
                     
                    shmPTR->lowStackNo++;
                    shmPTR->LowStackPointer++;
-                    fprintf(stderr, "Process %d is added to low priority queue\n", shmPTR->processID);
+                    fprintf(stderr, "Process %d is added to low priority queue\n", shmPTR->ReadyProcessID);
                     //shmPTR->NextProcess = shmPTR->LowStackQueue[shmPTR->LowStackPointer];
-                 }
-                   int j;
-//                    for( j = shmPTR->lowStackNo-1; j>=0; j--)
-  //                     fprintf(stderr,"%d",shmPTR->LowStackQueue[j]);
+                 } //sleep(1);
+                     for(x = 0; x < 10000000; x++){ }
+                    //for( j = shmPTR->lowStackNo-1; j>=0; j--)
+                      //   fprintf(stderr,"%d",shmPTR->LowStackQueue[j]);
                   
-                   if(nochildProcesses  < 10) break; }                
+                   sem2 = sem_open("sem10",1); sem_post(sem2);sem_close(sem2);
+                   if(nochildProcesses  < 18)
+                      break; }                
        
        } }
-           sleep(4);
+//           sleep(4);
      killpg(getpgid(getpid()), SIGTERM);
 
 exit(0);
